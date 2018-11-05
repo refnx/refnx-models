@@ -14,3 +14,6 @@ dataset.
 Since this repository is not a core part of *refnx*, and the contributions are
 from a diverse population, the veracity/correctness of each example is not
 checked.
+
+This collection of code fragments will be distributed under the BSD 3-clause
+licence.
