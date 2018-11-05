@@ -1,3 +1,11 @@
+.ipynb_checkpoints/
+*.pyc
+.idea
+.DS_Store
+*.icns
+__pycache__
+
+
 # Prerequisites
 *.d
 
