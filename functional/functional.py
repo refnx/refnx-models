@@ -1,6 +1,10 @@
 """
 A exemplar Component for an analytic profile.
 """
+__author__ = 'Andrew Nelson'
+__copyright__ = "Copyright 2019, Andrew Nelson"
+__license__ = "3 clause BSD"
+
 import numpy as np
 
 from refnx.reflect import ReflectModel, Structure, Component, SLD, Slab
@@ -29,18 +33,21 @@ class FunctionalForm(Component):
         after this one)
     name : str
         Name of component
+    reverse : bool
+        reverses the profile in this component alone
     microslab_max_thickness : float, optional
         Thickness of microslicing of spline for reflectivity calculation
 
     """
 
     def __init__(self, extent, decay, rough, left_component, right_component,
-                 name='', microslab_max_thickness=1):
+                 name='', reverse=False, microslab_max_thickness=1):
 
         self.name = name
 
         self.left_component = left_component
         self.right_component = right_component
+        self.reverse = reverse
 
         self.microslab_max_thickness = microslab_max_thickness
 
@@ -69,17 +76,28 @@ class FunctionalForm(Component):
         slabs = np.zeros((int(num_slabs), 5))
         slabs[:, 0] = slab_thick
 
-        # give last slab a miniscule roughness so it doesn't get contracted
-        slabs[-1:, 3] = 0.5
-
         a = self.left_component.slabs[-1, 1]
         b = self.right_component.slabs[0, 1]
 
         dist = np.cumsum(slabs[..., 0]) - 0.5 * slab_thick
 
-        if a >= b:
-            slabs[:, 1] = np.abs(b - a) * np.exp(- dist / self.decay) + a
-        else:
-            slabs[:, 1] = np.abs(b - a) * (1 - np.exp(- dist / self.decay)) + a
+        if self.reverse:
+            slabs[0, 3] = self.rough
+            if a <= b:
+                slabs[:, 1] = np.abs(b - a) * np.exp(-dist / self.decay) + a
+            else:
+                # b > a
+                slabs[:, 1] = np.abs(b - a) * (1. - np.exp(-dist / self.decay)) + b
 
+            slabs[0, 3] = self.rough
+
+            return slabs[::-1]
+        else:
+            if a >= b:
+                slabs[:, 1] = np.abs(b - a) * np.exp(-dist / self.decay) + b
+            else:
+                # b > a
+                slabs[:, 1] = np.abs(b - a) * (1. - np.exp(-dist / self.decay)) + a
+
+            slabs[0, 3] = self.rough
         return slabs
