@@ -29,6 +29,8 @@ class ParabolicBrush(Component):
         Total interfacial volume of polymer
     alpha: Parameter or float
         exponent of parabolic profile
+    delta: Parameter or float
+        delta for smearing end of parabolic profile
     rough: Parameter or float
         Roughness between this Component and `left_component`
     name: str
@@ -59,6 +61,8 @@ class ParabolicBrush(Component):
 
         self.alpha = (
             possibly_create_parameter(alpha, name='%s - alpha' % name))
+        self.delta = (
+            possibly_create_parameter(delta, name='%s - delta' % name))
         self.phi_0 = (
             possibly_create_parameter(phi_0, name='%s - phi_0' % name))
         self.rough = (
@@ -68,7 +72,7 @@ class ParabolicBrush(Component):
     def parameters(self):
         p = Parameters(name=self.name)
         p.extend([self.polymer_sld.parameters, self.phi_0, self.gamma,
-                  self.alpha, self.rough])
+                  self.alpha, self.delta, self.rough])
         return p
 
     def volume_fraction(self, z):
