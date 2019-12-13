@@ -41,6 +41,11 @@ class ParabolicBrush(Component):
     The characteristic height of the brush is given by `ParabolicBrush.H`. It
     is not a fitting parameter, but is calculated from the unit interval and
     the total interfacial volume.
+
+    Karim, A.; Satija, S. K.; Douglas, J. F.; Ankner, J. F.; Fetters, L. J.
+    "Neutron Reflectivity Study of the Density Profile of a Model End- Grafted
+     Polymer Brush: Influence of Solvent Quality",
+    Phys. Rev. Lett. 1994, 73, 3407−3410.
     """
     def __init__(self, polymer_sld, phi_0, gamma, alpha, rough,
                  name='', microslab_max_thickness=1):
