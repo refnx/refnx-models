@@ -42,8 +42,7 @@ class FunctionalForm(Component):
 
     def __init__(self, extent, decay, rough, left_component, right_component,
                  name='', reverse=False, microslab_max_thickness=1):
-
-        self.name = name
+        super(FunctionalForm, self).__init__(name=name)
 
         self.left_component = left_component
         self.right_component = right_component
@@ -69,8 +68,7 @@ class FunctionalForm(Component):
     def lnprob(self):
         return 0
 
-    @property
-    def slabs(self):
+    def slabs(self, structure=None):
         num_slabs = np.ceil(float(self.extent) / self.microslab_max_thickness)
         slab_thick = float(self.extent / num_slabs)
         slabs = np.zeros((int(num_slabs), 5))
