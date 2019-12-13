@@ -85,9 +85,6 @@ class ParabolicBrush(Component):
         vfp = phi_0 * (1 - (z/H) ** 2) ** alpha
         return vfp
 
-    def lnprob(self):
-        return 0
-
     @property
     def H(self):
         """

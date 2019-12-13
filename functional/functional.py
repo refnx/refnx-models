@@ -65,9 +65,6 @@ class FunctionalForm(Component):
         p.extend([self.extent, self.decay, self.rough])
         return p
 
-    def lnprob(self):
-        return 0
-
     def slabs(self, structure=None):
         num_slabs = np.ceil(float(self.extent) / self.microslab_max_thickness)
         slab_thick = float(self.extent / num_slabs)
