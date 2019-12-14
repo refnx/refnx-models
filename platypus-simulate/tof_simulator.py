@@ -273,4 +273,7 @@ class ReflectSimulator(object):
         ref, rerr = ErrorProp.EPdiv(self.reflected_beam, rerr,
                                     self.direct_beam, ierr)
         dataset = ReflectDataset(data=(self.q, ref, rerr, dx * self.q))
-        return dataset
+
+        # apply some counting statistics on top of dataset otherwise there will
+        # be no variation at e.g. critical edge.
+        return dataset.synthesise()
