@@ -8,8 +8,10 @@ __license__ = "3 clause BSD"
 import numpy as np
 from scipy.special import hyp2f1
 from scipy import integrate
+from scipy import stats
 
 from refnx.reflect import Component, SLD, Slab
+from refnx.reflect.reflect_model import gauss_legendre
 from refnx.analysis import (Parameter, Parameters,
                             possibly_create_parameter)
 
@@ -49,14 +51,13 @@ class ParabolicBrush(Component):
      Polymer Brush: Influence of Solvent Quality",
     Phys. Rev. Lett. 1994, 73, 3407−3410.
     """
-    def __init__(self, polymer_sld, phi_0, gamma, alpha, rough,
+    def __init__(self, polymer_sld, phi_0, gamma, alpha, delta, rough,
                  name='', microslab_max_thickness=1):
         super(ParabolicBrush, self).__init__(name=name)
 
         self.polymer_sld = SLD(polymer_sld)
         self.gamma = possibly_create_parameter(gamma,
                                                name='%s - gamma' % name)
-
         self.microslab_max_thickness = microslab_max_thickness
 
         self.alpha = (
@@ -68,6 +69,8 @@ class ParabolicBrush(Component):
         self.rough = (
             possibly_create_parameter(rough, name='%s - rough' % name))
 
+        # self.volume_fraction = np.vectorize(self._volume_fraction)
+
     @property
     def parameters(self):
         p = Parameters(name=self.name)
@@ -76,6 +79,11 @@ class ParabolicBrush(Component):
         return p
 
     def volume_fraction(self, z):
+        z = np.asfarray(z)
+        output = [self._volume_fraction(zed) for zed in z]
+        return np.array(output)
+
+    def _volume_fraction(self, z):
         """
         The volume fraction of the brush at distance `z`.
 
@@ -84,10 +92,27 @@ class ParabolicBrush(Component):
         z: float
             distance
         """
-        phi_0, alpha = self.phi_0.value, self.alpha.value
+        phi_0, alpha, delta = (self.phi_0.value,
+                              self.alpha.value,
+                              self.delta.value)
+
         H = self.H
-        vfp = phi_0 * (1 - (z/H) ** 2) ** alpha
-        return vfp
+        sd = delta / (2 * np.sqrt(2 * np.log(2.0)))
+
+        def kernel(x, z0, sd):
+            vfp = phi_0 * (1 - (x/H) ** 2) ** alpha
+            vfp[x >= H] = 0.
+            g = stats.norm.pdf(x, loc=z0, scale=sd)
+            return vfp * g
+
+        # might need to convolve with a Gaussian at end of profile
+        if (H - 2*delta) <= z <= (H + 2*delta):
+            return integrate.fixed_quad(kernel,
+                                  z - 3*sd,
+                                  z + 3*sd,
+                                  args=(z, sd), n=101)[0]
+        else:
+            return phi_0 * (1 - (z/H) ** 2) ** alpha
 
     @property
     def H(self):
@@ -97,7 +122,7 @@ class ParabolicBrush(Component):
         required_area = float(self.gamma)
         phi_0, alpha = self.phi_0.value, self.alpha.value
 
-        # Wolfram MathWorld
+        # Wolfram MathWorld integral
         unscaled_area = phi_0 * hyp2f1(0.5, -alpha, 1.5, 1)
 
         # def f(Z):
@@ -109,9 +134,11 @@ class ParabolicBrush(Component):
 
     def slabs(self, structure=None):
         H = self.H
+        delta = self.delta.value
+        total_thick = (H + 2*delta)
+        num_slabs = np.ceil(total_thick / self.microslab_max_thickness)
 
-        num_slabs = np.ceil(H / self.microslab_max_thickness)
-        slab_thick = H / num_slabs
+        slab_thick = total_thick / num_slabs
         slabs = np.zeros((int(num_slabs), 5))
 
         slabs[:, 0] = slab_thick
@@ -120,11 +147,7 @@ class ParabolicBrush(Component):
         slabs[0, 3] = self.rough.value
 
         dist = np.cumsum(slabs[..., 0]) - 0.5 * slab_thick
-
-        phi_0, alpha = self.phi_0.value, self.alpha.value
-        vfp = phi_0 * (1 - (dist / H) ** 2) ** alpha
-        vfp[dist > H] = 0
-        vfp[dist < 0] = 0
+        vfp = self.volume_fraction(dist)
 
         slabs[:, 4] = 1 - vfp
 
