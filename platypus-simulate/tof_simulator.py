@@ -235,7 +235,8 @@ class ReflectSimulator(object):
         q = general.q(angles, wavelengths)
 
         # calculate reflectivities for a neutron of a given Q.
-        r = self.model(q)
+        # resolution smearing is taken care of elsewhere.
+        r = self.model(q, x_err=0.)
 
         # accept or reject neutrons based on the reflectivity of
         # sample at a given Q.
