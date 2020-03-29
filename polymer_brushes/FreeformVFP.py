@@ -37,7 +37,7 @@ class FreeformVFP(Component):
             Polymer Slabs to the left of the spline
         right_slabs : sequence of Slab
             Polymer Slabs to the right of the spline
-        interpolator : scipy interpolator
+        interpolator : scipy  interpolator
             The interpolator for the spline
         zgrad : bool, optional
             Set to `True` to force the gradient of the volume fraction to zero
@@ -259,7 +259,7 @@ class FreeformVFP(Component):
         p.extend([slab.parameters for slab in self.right_slabs])
         return p
 
-    def lnprob(self):
+    def logp(self):
         return 0
 
     def profile_area(self):
