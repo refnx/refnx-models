@@ -10,6 +10,7 @@ from scipy.integrate import simps
 from scipy.interpolate import InterpolatedUnivariateSpline as IUS
 from scipy.stats import rv_continuous, trapz
 from scipy.optimize import brentq
+from scipy._lib._util import check_random_state
 
 from refnx.reduce import PlatypusNexus as PN
 from refnx.reduce.platypusnexus import calculate_wavelength_bins
@@ -208,7 +209,7 @@ class ReflectSimulator(object):
                                   loc=-alpha,
                                   scale=2 * alpha)
 
-    def run(self, samples):
+    def run(self, samples, random_state=None):
         """
         Sample the beam.
 
@@ -224,12 +225,23 @@ class ReflectSimulator(object):
         ----------
         samples: int
             How many samples to run.
+        random_state: {int, `~np.random.RandomState`, `~np.random.Generator`}, optional
+        If `random_state` is not specified the
+        `~np.random.RandomState` singleton is used.
+        If `random_state` is an int, a new ``RandomState`` instance is used,
+        seeded with seed.
+        If `random_state` is already a ``RandomState`` or a ``Generator``
+        instance, then that object is used.
+        Specify `random_state` for repeatable minimizations.
         """
+        # grab a random number generator
+        rng = check_random_state(random_state)
+
         # generate neutrons of different angular divergence
-        angles = self.angular_dist.rvs(samples) + self.angle
+        angles = self.angular_dist.rvs(samples, random_state=rng) + self.angle
 
         # generate neutrons of various wavelengths
-        wavelengths = self.spectrum_dist.rvs(size=samples)
+        wavelengths = self.spectrum_dist.rvs(size=samples, random_state=rng)
 
         # calculate Q
         q = general.q(angles, wavelengths)
@@ -240,13 +252,13 @@ class ReflectSimulator(object):
 
         # accept or reject neutrons based on the reflectivity of
         # sample at a given Q.
-        criterion = np.random.random(size=samples)
+        criterion = rng.uniform(size=samples)
         accepted = criterion < r
 
         # implement wavelength smearing from choppers
         # factor of 0.68 is used to convert from FWHM-Gaussian to
         # full-width-Uniform
-        noise = np.random.random(size=samples) - 0.5
+        noise = rng.uniform(-0.5, 0.5, size=samples)
         jittered_wavelengths = wavelengths * (1 +
                                               self.dlambda / 0.68 * noise)
 
