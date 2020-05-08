@@ -111,6 +111,8 @@ class ParabolicBrush(Component):
                                   z - 3*sd,
                                   z + 3*sd,
                                   args=(z, sd), n=101)[0]
+        elif z > (H + 2*delta):
+            return 0
         else:
             return phi_0 * (1 - (z/H) ** 2) ** alpha
 
