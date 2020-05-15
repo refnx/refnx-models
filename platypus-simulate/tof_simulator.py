@@ -142,7 +142,8 @@ class ReflectSimulator(object):
         distance from pre-sample slit to sample (mm)
 
     dtheta: float
-        Angular resolution expressed as a percentage
+        Angular resolution expressed as a percentage (FWHM of the Gaussian
+        approximation of a trapezoid)
 
     lo_wavelength: float
         smallest wavelength used from the generated neutron spectrum
@@ -153,9 +154,12 @@ class ReflectSimulator(object):
     dlambda: float
         Wavelength resolution expressed as a percentage. dlambda=3.3
         corresponds to using disk choppers 1+3 on *PLATYPUS*.
+        (FWHM of the Gaussian approximation of a trapezoid)
 
     rebin: float
-        Rebinning expressed as a percentage.
+        Rebinning expressed as a percentage. The width of a wavelength bin is
+        `rebin / 100 * lambda`. You have to multiply by 0.68 to get its
+        fractional contribution to the overall resolution smearing.
 
     Notes
     -----
@@ -163,7 +167,7 @@ class ReflectSimulator(object):
     """
 
     def __init__(self, model, angle,
-                 L12=2859, footprint=60, L2S=120, dtheta=3.3,  # angular resolution
+                 L12=2859, footprint=60, L2S=120, dtheta=3.3,
                  lo_wavelength=2.8, hi_wavelength=18,
                  dlambda=3.3, rebin=2):
         self.model = model
@@ -173,8 +177,13 @@ class ReflectSimulator(object):
         self.bkg = model.bkg.value
         self.angle = angle
 
-        # the fractional width of a square wavelength resolution
+        # dlambda refers to the FWHM of the gaussian approximation to a uniform
+        # distribution. The full width of the uniform distribution is
+        # dlambda/0.68.
         self.dlambda = dlambda / 100.
+        # the rebin percentage refers to the full width of the bins. You have to
+        # multiply this value by 0.68 to get the equivalent contribution to the
+        # resolution function.
         self.rebin = rebin / 100.
         self.wavelength_bins = calculate_wavelength_bins(lo_wavelength,
                                                          hi_wavelength,
@@ -198,7 +207,8 @@ class ReflectSimulator(object):
 
         # angular resolution generator, based on a trapezoidal distribution
         # The slit settings are the optimised set typically used in an
-        # experiment
+        # experiment. dtheta/theta refers to the FWHM of a Gaussian
+        # approximation to a trapezoid.
         self.dtheta = dtheta / 100.
         self.footprint = footprint
         s1, s2 = general.slit_optimiser(footprint, self.dtheta, angle=angle,
@@ -247,7 +257,8 @@ class ReflectSimulator(object):
         q = general.q(angles, wavelengths)
 
         # calculate reflectivities for a neutron of a given Q.
-        # resolution smearing is taken care of elsewhere.
+        # the angular resolution smearing has already been done. The wavelength
+        # resolution smearing follows.
         r = self.model(q, x_err=0.)
 
         # accept or reject neutrons based on the reflectivity of
@@ -255,9 +266,8 @@ class ReflectSimulator(object):
         criterion = rng.uniform(size=samples)
         accepted = criterion < r
 
-        # implement wavelength smearing from choppers
-        # factor of 0.68 is used to convert from FWHM-Gaussian to
-        # full-width-Uniform
+        # implement wavelength smearing from choppers. Jitter the wavelengths
+        # by a uniform distribution whose full width is dlambda / 0.68.
         noise = rng.uniform(-0.5, 0.5, size=samples)
         jittered_wavelengths = wavelengths * (1 +
                                               self.dlambda / 0.68 * noise)
@@ -281,7 +291,7 @@ class ReflectSimulator(object):
         """
         rerr = np.sqrt(self.reflected_beam)
         ierr = np.sqrt(self.direct_beam)
-        dx = np.sqrt((self.dlambda) ** 2 + self.dtheta ** 2 + self.rebin ** 2)
+        dx = np.sqrt((self.dlambda) ** 2 + self.dtheta ** 2 + (0.68 * self.rebin) ** 2)
 
         ref, rerr = ErrorProp.EPdiv(self.reflected_beam, rerr,
                                     self.direct_beam, ierr)
