@@ -172,8 +172,6 @@ class ReflectSimulator(object):
                  dlambda=3.3, rebin=2):
         self.model = model
 
-        # turn off resolution smearing
-        self.model.dq = 0
         self.bkg = model.bkg.value
         self.angle = angle
 
