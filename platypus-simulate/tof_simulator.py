@@ -14,6 +14,7 @@ from scipy._lib._util import check_random_state
 
 from refnx.reduce import PlatypusNexus as PN
 from refnx.reduce.platypusnexus import calculate_wavelength_bins
+from refnx.reduce import parabolic_motion as pm
 from refnx.util import general, ErrorProp
 from refnx.reflect import Slab, Structure, SLD, ReflectModel
 from refnx.dataset import ReflectDataset
@@ -161,6 +162,10 @@ class ReflectSimulator(object):
         `rebin / 100 * lambda`. You have to multiply by 0.68 to get its
         fractional contribution to the overall resolution smearing.
 
+    gravity: bool
+        Apply gravity during simulation? Turn gravity off if `angle` is
+        already an array of incident angles due to gravity.
+
     force_gaussian: bool
         Instead of using trapzeoidal and uniform distributions for angular
         and wavelength resolution, use a Gaussian distribution (doesn't apply
@@ -179,7 +184,8 @@ class ReflectSimulator(object):
     def __init__(self, model, angle,
                  L12=2859, footprint=60, L2S=120, dtheta=3.3,
                  lo_wavelength=2.8, hi_wavelength=18,
-                 dlambda=3.3, rebin=2, force_gaussian=False,
+                 dlambda=3.3, rebin=2, gravity=False,
+                 force_gaussian=False,
                  force_uniform_wavelength=False):
         self.model = model
 
@@ -197,13 +203,30 @@ class ReflectSimulator(object):
         self.wavelength_bins = calculate_wavelength_bins(lo_wavelength,
                                                          hi_wavelength,
                                                          rebin)
-        # nominal Q values
         bin_centre = 0.5 * (self.wavelength_bins[1:] + self.wavelength_bins[:-1])
-        self.q = general.q(angle, bin_centre)
+
+        # angular deviation due to gravity
+        # --> no correction for gravity affecting width of angular resolution
+        elevations = 0
+        if gravity:
+            speeds = general.wavelength_velocity(bin_centre)
+            # trajectories through slits for different wavelengths
+            trajectories = pm.find_trajectory(L12 / 1000., 0, speeds)
+            # elevation at sample
+            elevations = pm.elevation(
+                trajectories,
+                speeds,
+                (L12 + L2S) / 1000.
+            )
+
+        # nominal Q values
+        self.q = general.q(angle - elevations, bin_centre)
 
         # keep a tally of the direct and reflected beam
         self.direct_beam = np.zeros((self.wavelength_bins.size - 1))
         self.reflected_beam = np.zeros((self.wavelength_bins.size - 1))
+
+        self.gravity = gravity
 
         # wavelength generator
         self.force_uniform_wavelength = force_uniform_wavelength
@@ -234,9 +257,13 @@ class ReflectSimulator(object):
 
         self.dtheta = dtheta / 100.
         self.footprint = footprint
+        self.angle = angle
+        self.L2S = L2S
+        self.L12 = L12
         s1, s2 = general.slit_optimiser(footprint, self.dtheta, angle=angle,
                                         L2S=L2S, L12=L12, verbose=False)
         div, alpha, beta = general.div(s1, s2, L12=L12)
+        self.s1, self.s2 = s1, s2
 
         if force_gaussian:
             self.angular_dist = norm(scale=div / 2.3548)
@@ -274,11 +301,25 @@ class ReflectSimulator(object):
         # grab a random number generator
         rng = check_random_state(random_state)
 
+        # generate neutrons of various wavelengths
+        wavelengths = self.spectrum_dist.rvs(size=samples, random_state=rng)
+
         # generate neutrons of different angular divergence
         angles = self.angular_dist.rvs(samples, random_state=rng) + self.angle
 
-        # generate neutrons of various wavelengths
-        wavelengths = self.spectrum_dist.rvs(size=samples, random_state=rng)
+        # angular deviation due to gravity
+        # --> no correction for gravity affecting width of angular resolution
+        if self.gravity:
+            speeds = general.wavelength_velocity(wavelengths)
+            # trajectories through slits for different wavelengths
+            trajectories = pm.find_trajectory(self.L12 / 1000., 0, speeds)
+            # elevation at sample
+            elevations = pm.elevation(
+                trajectories,
+                speeds,
+                (self.L12 + self.L2S) / 1000.
+            )
+            angles -= elevations
 
         # calculate Q
         q = general.q(angles, wavelengths)
