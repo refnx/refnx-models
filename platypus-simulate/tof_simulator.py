@@ -8,7 +8,7 @@ __license__ = "3 clause BSD"
 import numpy as np
 from scipy.integrate import simps
 from scipy.interpolate import InterpolatedUnivariateSpline as IUS
-from scipy.stats import rv_continuous, trapz
+from scipy.stats import rv_continuous, trapz, norm
 from scipy.optimize import brentq
 from scipy._lib._util import check_random_state
 
@@ -161,6 +161,11 @@ class ReflectSimulator(object):
         `rebin / 100 * lambda`. You have to multiply by 0.68 to get its
         fractional contribution to the overall resolution smearing.
 
+    force_gaussian: float
+        Instead of using trapzeoidal and uniform distributions for angular
+        and wavelength resolution, use a Gaussian distribution (doesn't apply
+        to the rebinning contribution).
+
     Notes
     -----
     Angular, chopper and rebin smearing effects are all taken into account.
@@ -169,7 +174,7 @@ class ReflectSimulator(object):
     def __init__(self, model, angle,
                  L12=2859, footprint=60, L2S=120, dtheta=3.3,
                  lo_wavelength=2.8, hi_wavelength=18,
-                 dlambda=3.3, rebin=2):
+                 dlambda=3.3, rebin=2, force_gaussian=False):
         self.model = model
 
         self.bkg = model.bkg.value
@@ -203,6 +208,8 @@ class ReflectSimulator(object):
         i = i.squeeze();
         self.spectrum_dist = SpectrumDist(q, i)
 
+        self.force_gaussian = force_gaussian
+
         # angular resolution generator, based on a trapezoidal distribution
         # The slit settings are the optimised set typically used in an
         # experiment. dtheta/theta refers to the FWHM of a Gaussian
@@ -212,10 +219,14 @@ class ReflectSimulator(object):
         s1, s2 = general.slit_optimiser(footprint, self.dtheta, angle=angle,
                                         L2S=L2S, L12=L12, verbose=False)
         div, alpha, beta = general.div(s1, s2, L12=L12)
-        self.angular_dist = trapz(c=(alpha - beta) / 2. / alpha,
-                                  d=(alpha + beta) / 2. / alpha,
-                                  loc=-alpha,
-                                  scale=2 * alpha)
+
+        if force_gaussian:
+            self.angular_dist = norm(scale=div / 2.3548)
+        else:
+            self.angular_dist = trapz(c=(alpha - beta) / 2. / alpha,
+                                      d=(alpha + beta) / 2. / alpha,
+                                      loc=-alpha,
+                                      scale=2 * alpha)
 
     def run(self, samples, random_state=None):
         """
@@ -266,9 +277,15 @@ class ReflectSimulator(object):
 
         # implement wavelength smearing from choppers. Jitter the wavelengths
         # by a uniform distribution whose full width is dlambda / 0.68.
-        noise = rng.uniform(-0.5, 0.5, size=samples)
-        jittered_wavelengths = wavelengths * (1 +
-                                              self.dlambda / 0.68 * noise)
+        if self.force_gaussian:
+            noise = rng.standard_normal(size=samples)
+            jittered_wavelengths = wavelengths * (
+                    1 + self.dlambda / 2.3548 * noise
+            )
+        else:
+            noise = rng.uniform(-0.5, 0.5, size=samples)
+            jittered_wavelengths = wavelengths * (1 +
+                                                  self.dlambda / 0.68 * noise)
 
         # update direct and reflected beam counts. Rebin smearing
         # is taken into account due to the finite size of the wavelength
