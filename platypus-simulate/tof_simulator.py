@@ -8,7 +8,7 @@ __license__ = "3 clause BSD"
 import numpy as np
 from scipy.integrate import simps
 from scipy.interpolate import InterpolatedUnivariateSpline as IUS
-from scipy.stats import rv_continuous, trapz, norm
+from scipy.stats import rv_continuous, trapz, norm, uniform
 from scipy.optimize import brentq
 from scipy._lib._util import check_random_state
 
@@ -161,10 +161,15 @@ class ReflectSimulator(object):
         `rebin / 100 * lambda`. You have to multiply by 0.68 to get its
         fractional contribution to the overall resolution smearing.
 
-    force_gaussian: float
+    force_gaussian: bool
         Instead of using trapzeoidal and uniform distributions for angular
         and wavelength resolution, use a Gaussian distribution (doesn't apply
         to the rebinning contribution).
+
+    force_uniform_wavelength: bool
+        Instead of using a wavelength spectrum representative of the Platypus
+        time-of-flight reflectometer generate wavelengths from a uniform
+        distribution.
 
     Notes
     -----
@@ -174,7 +179,8 @@ class ReflectSimulator(object):
     def __init__(self, model, angle,
                  L12=2859, footprint=60, L2S=120, dtheta=3.3,
                  lo_wavelength=2.8, hi_wavelength=18,
-                 dlambda=3.3, rebin=2, force_gaussian=False):
+                 dlambda=3.3, rebin=2, force_gaussian=False,
+                 force_uniform_wavelength=False):
         self.model = model
 
         self.bkg = model.bkg.value
@@ -200,13 +206,20 @@ class ReflectSimulator(object):
         self.reflected_beam = np.zeros((self.wavelength_bins.size - 1))
 
         # wavelength generator
-        a = PN('PLP0000711.nx.hdf')
-        q, i, di = a.process(normalise=False, normalise_bins=False,
-                             rebin_percent=0, lo_wavelength=lo_wavelength,
-                             hi_wavelength=hi_wavelength)
-        q = q.squeeze();
-        i = i.squeeze();
-        self.spectrum_dist = SpectrumDist(q, i)
+        self.force_uniform_wavelength = force_uniform_wavelength
+        if force_uniform_wavelength:
+            self.spectrum_dist = uniform(
+                loc=lo_wavelength - 1,
+                scale=hi_wavelength - lo_wavelength + 1)
+        else:
+            a = PN('PLP0000711.nx.hdf')
+            q, i, di = a.process(normalise=False, normalise_bins=False,
+                                 rebin_percent=0.5,
+                                 lo_wavelength=max(0, lo_wavelength - 1),
+                                 hi_wavelength=hi_wavelength + 1)
+            q = q.squeeze();
+            i = i.squeeze();
+            self.spectrum_dist = SpectrumDist(q, i)
 
         self.force_gaussian = force_gaussian
 
@@ -214,6 +227,11 @@ class ReflectSimulator(object):
         # The slit settings are the optimised set typically used in an
         # experiment. dtheta/theta refers to the FWHM of a Gaussian
         # approximation to a trapezoid.
+
+        # stores the q vectors contributing towards each datapoint
+        self._res_kernel = {}
+        self._min_samples = 0
+
         self.dtheta = dtheta / 100.
         self.footprint = footprint
         s1, s2 = general.slit_optimiser(footprint, self.dtheta, angle=angle,
@@ -298,6 +316,50 @@ class ReflectSimulator(object):
         hist = np.histogram(jittered_wavelengths[accepted],
                             self.wavelength_bins)
         self.reflected_beam += hist[0]
+
+        # update resolution kernel. If we have more than 100000 in all
+        # bins skip
+        if (
+                len(self._res_kernel) and
+                np.min([len(v) for v in self._res_kernel.values()]) > 500000
+        ):
+            return
+
+        bin_loc = np.digitize(jittered_wavelengths, self.wavelength_bins)
+        for i in range(1, len(self.wavelength_bins)):
+            # extract q values that fall in each wavelength bin
+            q_for_bin = np.copy(q[bin_loc == i])
+            q_samples_so_far = self._res_kernel.get(i - 1,
+                                                    np.array([]))
+            updated_samples = np.concatenate((q_samples_so_far,
+                                              q_for_bin))
+
+            # no need to keep double precision for these sample arrays
+            self._res_kernel[i - 1] = updated_samples.astype(np.float32)
+
+    @property
+    def resolution_kernel(self):
+        histos = []
+        # first histogram all the q values corresponding to a specific bin
+        # this will come as shortest wavelength first, or highest Q. This
+        # is because the wavelength bins are monotonic increasing.
+        for v in self._res_kernel.values():
+            histos.append(np.histogram(v, density=True, bins=31))
+
+        # make lowest Q comes first.
+        histos.reverse()
+
+        # what is the largest number of bins?
+        max_bins = np.max([len(histo[0]) for histo in histos])
+
+        kernel = np.full((len(histos), 2, max_bins), np.nan)
+        for i, histo in enumerate(histos):
+            p, x = histo
+            sz = len(p)
+            kernel[i, 0, :sz] = 0.5 * (x[:-1] + x[1:])
+            kernel[i, 1, :sz] = p
+
+        return kernel
 
     @property
     def reflectivity(self):
