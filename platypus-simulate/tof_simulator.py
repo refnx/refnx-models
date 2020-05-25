@@ -263,7 +263,7 @@ class ReflectSimulator(object):
         s1, s2 = general.slit_optimiser(footprint, self.dtheta, angle=angle,
                                         L2S=L2S, L12=L12, verbose=False)
         div, alpha, beta = general.div(s1, s2, L12=L12)
-        self.s1, self.s2 = s1, s2
+        self.div, self.s1, self.s2 = s1, s2, div
 
         if force_gaussian:
             self.angular_dist = norm(scale=div / 2.3548)
@@ -400,6 +400,12 @@ class ReflectSimulator(object):
             kernel[i, 0, :sz] = 0.5 * (x[:-1] + x[1:])
             kernel[i, 1, :sz] = p
 
+        # filter points with zero counts because error is incorrect
+        mask = self.reflected_beam != 0
+        mask = mask[::-1]
+
+        kernel = kernel[mask]
+
         return kernel
 
     @property
@@ -409,11 +415,20 @@ class ReflectSimulator(object):
         """
         rerr = np.sqrt(self.reflected_beam)
         ierr = np.sqrt(self.direct_beam)
+
         dx = np.sqrt((self.dlambda) ** 2 + self.dtheta ** 2 + (0.68 * self.rebin) ** 2)
+        dx *= self.q
 
         ref, rerr = ErrorProp.EPdiv(self.reflected_beam, rerr,
                                     self.direct_beam, ierr)
-        dataset = ReflectDataset(data=(self.q, ref, rerr, dx * self.q))
+
+        # filter points with zero counts because error is incorrect
+        mask = rerr != 0
+
+        dataset = ReflectDataset(data=(self.q[mask],
+                                       ref[mask],
+                                       rerr[mask],
+                                       dx[mask]))
 
         # apply some counting statistics on top of dataset otherwise there will
         # be no variation at e.g. critical edge.
