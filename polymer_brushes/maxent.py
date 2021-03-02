@@ -11,7 +11,7 @@ from refnx.analysis import (
     possibly_create_parameter,
     Parameters,
 )
-from refnx.reflect import Component, Slab, SLD
+from refnx.reflect import Component, Slab, SLD, Structure
 
 
 class MaxEntVFP(Component):
