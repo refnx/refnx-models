@@ -71,8 +71,8 @@ class FunctionalForm(Component):
         slabs = np.zeros((int(num_slabs), 5))
         slabs[:, 0] = slab_thick
 
-        a = self.left_component.slabs[-1, 1]
-        b = self.right_component.slabs[0, 1]
+        a = self.left_component.slabs()[-1, 1]
+        b = self.right_component.slabs()[0, 1]
 
         dist = np.cumsum(slabs[..., 0]) - 0.5 * slab_thick
 
