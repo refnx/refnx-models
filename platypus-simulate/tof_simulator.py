@@ -132,6 +132,9 @@ class ReflectSimulator(object):
     angle: float
         Angle of incidence (degrees)
 
+    direct_spectrum: str, PlatypusNexus, h5 handle
+        Contains the direct beam spectrum. Processed using PlatypusNexus
+
     L12: float
         distance between collimation slits (mm)
 
@@ -184,6 +187,7 @@ class ReflectSimulator(object):
         self,
         model,
         angle,
+        direct_spectrum=None,
         L12=2859,
         footprint=60,
         L2S=120,
@@ -248,7 +252,7 @@ class ReflectSimulator(object):
                 loc=lo_wavelength - 1, scale=hi_wavelength - lo_wavelength + 1
             )
         else:
-            a = PN("PLP0000711.nx.hdf")
+            a = PN(direct_spectrum)
             q, i, di = a.process(
                 normalise=False,
                 normalise_bins=False,
@@ -444,7 +448,7 @@ class ReflectSimulator(object):
         # this will come as shortest wavelength first, or highest Q. This
         # is because the wavelength bins are monotonic increasing.
         for v in self._res_kernel.values():
-            histos.append(np.histogram(v, density=True, bins=31))
+            histos.append(np.histogram(v, density=True, bins='auto'))
 
         # make lowest Q comes first.
         histos.reverse()
