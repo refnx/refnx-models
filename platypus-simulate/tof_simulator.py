@@ -199,6 +199,7 @@ class ReflectSimulator(object):
         gravity=False,
         force_gaussian=False,
         force_uniform_wavelength=False,
+        only_resolution=False,
     ):
         self.model = model
 
@@ -265,6 +266,7 @@ class ReflectSimulator(object):
             self.spectrum_dist = SpectrumDist(q, i)
 
         self.force_gaussian = force_gaussian
+        self.only_resolution = only_resolution
 
         # angular resolution generator, based on a trapezoidal distribution
         # The slit settings are the optimised set typically used in an
@@ -318,13 +320,13 @@ class ReflectSimulator(object):
         samples: int
             How many samples to run.
         random_state: {int, `~np.random.RandomState`, `~np.random.Generator`}, optional
-        If `random_state` is not specified the
-        `~np.random.RandomState` singleton is used.
-        If `random_state` is an int, a new ``RandomState`` instance is used,
-        seeded with seed.
-        If `random_state` is already a ``RandomState`` or a ``Generator``
-        instance, then that object is used.
-        Specify `random_state` for repeatable minimizations.
+            If `random_state` is not specified the
+            `~np.random.RandomState` singleton is used.
+            If `random_state` is an int, a new ``RandomState`` instance is used,
+            seeded with seed.
+            If `random_state` is already a ``RandomState`` or a ``Generator``
+            instance, then that object is used.
+            Specify `random_state` for repeatable minimizations.
         """
         # grab a random number generator
         rng = check_random_state(random_state)
@@ -353,12 +355,15 @@ class ReflectSimulator(object):
         # calculate reflectivities for a neutron of a given Q.
         # the angular resolution smearing has already been done. The wavelength
         # resolution smearing follows.
-        r = self.model(q, x_err=0.0)
+        if not self.only_resolution:
+            r = self.model(q, x_err=0.0)
 
-        # accept or reject neutrons based on the reflectivity of
-        # sample at a given Q.
-        criterion = rng.uniform(size=samples)
-        accepted = criterion < r
+            # accept or reject neutrons based on the reflectivity of
+            # sample at a given Q.
+            criterion = rng.uniform(size=samples)
+            accepted = criterion < r
+        else:
+            accepted = np.ones_like(q, dtype=bool)            
 
         # implement wavelength smearing from choppers. Jitter the wavelengths
         # by a uniform distribution whose full width is dlambda / 0.68.
@@ -376,19 +381,20 @@ class ReflectSimulator(object):
         # update reflected beam counts. Rebin smearing
         # is taken into account due to the finite size of the wavelength
         # bins.
-        hist = np.histogram(
-            jittered_wavelengths[accepted], self.wavelength_bins
-        )
-        self.reflected_beam += hist[0]
-        self.bmon_reflect += float(samples)
+        if not self.only_resolution:
+            hist = np.histogram(
+                jittered_wavelengths[accepted], self.wavelength_bins
+            )
+            self.reflected_beam += hist[0]
+            self.bmon_reflect += float(samples)
 
         # update resolution kernel. If we have more than 100000 in all
         # bins skip
         if (
             len(self._res_kernel)
-            and np.min([len(v) for v in self._res_kernel.values()]) > 500000
+            and np.min([len(v) for v in self._res_kernel.values()]) > 100000
         ):
-            return
+            raise ValueError
 
         bin_loc = np.digitize(jittered_wavelengths, self.wavelength_bins)
         for i in range(1, len(self.wavelength_bins)):
@@ -409,13 +415,13 @@ class ReflectSimulator(object):
         samples: int
             How many samples to run.
         random_state: {int, `~np.random.RandomState`, `~np.random.Generator`}, optional
-        If `random_state` is not specified the
-        `~np.random.RandomState` singleton is used.
-        If `random_state` is an int, a new ``RandomState`` instance is used,
-        seeded with seed.
-        If `random_state` is already a ``RandomState`` or a ``Generator``
-        instance, then that object is used.
-        Specify `random_state` for repeatable minimizations.
+            If `random_state` is not specified the
+            `~np.random.RandomState` singleton is used.
+            If `random_state` is an int, a new ``RandomState`` instance is used,
+            seeded with seed.
+            If `random_state` is already a ``RandomState`` or a ``Generator``
+            instance, then that object is used.
+            Specify `random_state` for repeatable minimizations.
         """
         # grab a random number generator
         rng = check_random_state(random_state)
@@ -476,6 +482,11 @@ class ReflectSimulator(object):
         """
         The reflectivity of the sampled system
         """
+        if self.only_resolution:
+            raise RuntimeError(
+                "ReflectSimulator is only calculating resolution function"
+            )
+
         rerr = np.sqrt(self.reflected_beam)
         bmon_reflect_err = np.sqrt(self.bmon_reflect)
 
@@ -506,6 +517,7 @@ class ReflectSimulator(object):
             data=(self.q[mask], ref[mask], rerr[mask], dx[mask])
         )
 
+        dataset.sort()
         # apply some counting statistics on top of dataset otherwise there will
         # be no variation at e.g. critical edge.
         # return dataset.synthesise()
