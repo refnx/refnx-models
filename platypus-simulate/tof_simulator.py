@@ -394,7 +394,7 @@ class ReflectSimulator(object):
             len(self._res_kernel)
             and np.min([len(v) for v in self._res_kernel.values()]) > 100000
         ):
-            raise ValueError
+            return
 
         bin_loc = np.digitize(jittered_wavelengths, self.wavelength_bins)
         for i in range(1, len(self.wavelength_bins)):
