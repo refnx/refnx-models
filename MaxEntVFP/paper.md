@@ -1,0 +1,6 @@
+- slowly varying SLD profile, e.g. a ramp, possibly either side of a bulk medium
+- a sharpish peak?
+- part of the component that is negative (entropy only works on positive values)
+- volume fraction profile of a brush
+- non-uniform profile from recent articles
+- 
