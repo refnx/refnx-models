@@ -1,0 +1,10 @@
+* 199366: dry
+
+
+* 199424: 0v
+
+
+* 199431: 0.5v
+Within the folders, "_model-refl.dat" contains the raw reflectivity data (R vs Q, as well as error in each) and my generated R vs Q model data ("theory" column). "_model-slabs.dat" contains the layered model (with SLD, thickness, and roughness for each layer).
+
+Chen2023, https://pubs.acs.org/doi/epdf/10.1021/jacsau.3c00486
