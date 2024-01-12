@@ -1,0 +1,126 @@
+.probe
+  .back_absorption = 1
+  .background = 0
+  .intensity = normalization = 1
+  .sample_broadening = sample_broadening = 0
+  .theta_offset = theta_offset = 0
+.sample
+  .layers
+    [0]
+      .interface = D2O05V interface = 30.5549 in [30,100]
+      .material
+        .irho = D2O05V irho = 0
+        .rho = D2O05V rho = 6.26924 in [6.2,6.4]
+      .thickness = D2O05V thickness = 0
+    [1]
+      .interface = material8 interface = 30.2895 in [30,100]
+      .material
+        .irho = material8 irho = 0
+        .rho = material8 rho = 5.53881 in [4.5,6.36]
+      .thickness = material8 thickness = 189.43 in [100,600]
+    [2]
+      .interface = material7 interface = 47.3242 in [30,100]
+      .material
+        .irho = material7 irho = 0
+        .rho = material7 rho = 4.50092 in [4.5,6.36]
+      .thickness = material7 thickness = 321.121 in [100,600]
+    [3]
+      .interface = material6 interface = 81.0228 in [30,100]
+      .material
+        .irho = material6 irho = 0
+        .rho = material6 rho = 5.32926 in [4.5,6.36]
+      .thickness = material6 thickness = 567.949 in [100,600]
+    [4]
+      .interface = material5 interface = 95.5139 in [30,100]
+      .material
+        .irho = material5 irho = 0
+        .rho = material5 rho = 5.45783 in [4.5,6.36]
+      .thickness = material5 thickness = 588.706 in [100,600]
+    [5]
+      .interface = material4 interface = 99.9454 in [30,100]
+      .material
+        .irho = material4 irho = 0
+        .rho = material4 rho = 5.02696 in [4.5,6.36]
+      .thickness = material4 thickness = 417.898 in [100,600]
+    [6]
+      .interface = material3 interface = 12.583 in [10,50]
+      .material
+        .irho = material3 irho = 0
+        .rho = material3 rho = 5.53603 in [4.5,6.36]
+      .thickness = material3 thickness = 423.035 in [30,600]
+    [7]
+      .interface = material2 interface = 14.3046 in [10,25]
+      .material
+        .irho = material2 irho = 0
+        .rho = material2 rho = 5.21505 in [4.5,6.36]
+      .thickness = material2 thickness = 109.299 in [20,600]
+    [8]
+      .interface = material1 interface = 9.01818 in [2.5,25]
+      .material
+        .irho = material1 irho = 0
+        .rho = material1 rho = 4.56748 in [4.5,6.36]
+      .thickness = material1 thickness = 40.4987 in [30,600]
+    [9]
+      .interface = void interface = 1.41784 in [1,5]
+      .material
+        .irho = void irho = 0
+        .rho = void rho = 6.13193 in [5.5,6.3]
+      .thickness = void thickness = 18.5935 in [5,50]
+    [10]
+      .interface = Pd interface = 2.27968 in [2,6]
+      .material
+        .irho = Pd irho = 0
+        .rho = Pd rho = 4.09519 in [3.9,4.1]
+      .thickness = Pd thickness = 109.963 in [100,110]
+    [11]
+      .interface = SiO2 interface = 5.83676 in [2,6]
+      .material
+        .irho = SiO2 irho = 0
+        .rho = SiO2 rho = 3.00692 in [3,3.4]
+      .thickness = SiO2 thickness = 25.0439 in [25,30]
+    [12]
+      .interface = SiWAFER705V interface = 0
+      .material
+        .irho = SiWAFER705V irho = 0
+        .rho = SiWAFER705V rho = 2.19998 in [1.9,2.2]
+      .thickness = SiWAFER705V thickness = 0
+  .thickness = stack thickness = 2811.54
+
+[chisq=5.23(32), nllf=324.231]
+              Parameter       mean  median    best [   68% interval] [   95% interval]
+ 1     D2O05V interface  30.51(59)  30.312  30.555 [  30.06   31.01] [  30.01   32.32]
+ 2           D2O05V rho  6.271(35)   6.273   6.269 [   6.23    6.31] [   6.21    6.33]
+ 3  material8 interface  30.39(39)  30.281  30.289 [  30.06   30.69] [  30.01   31.40]
+ 4        material8 rho  5.527(32)   5.531   5.539 [   5.49    5.56] [   5.45    5.58]
+ 5  material8 thickness  188.1(24) 187.970 189.430 [ 185.87  190.37] [ 183.26  193.19]
+ 6  material7 interface   47.1(28)   47.25   47.32 [   45.1    49.0] [   41.1    52.8]
+ 7        material7 rho  4.525(25)  4.5170  4.5009 [  4.503   4.550] [  4.500   4.592]
+ 8  material7 thickness  322.6(33)  322.99  321.12 [  319.6   325.7] [  315.2   328.3]
+ 9  material6 interface   82.6(85)   82.16   81.02 [   77.1    90.6] [   59.8    98.5]
+10        material6 rho  5.347(55)   5.346   5.329 [   5.29    5.40] [   5.23    5.44]
+11  material6 thickness  569.9(92)  568.22  567.95 [  563.2   577.9] [  551.9   594.2]
+12  material5 interface   93.7(43)   94.57   95.51 [   90.4    97.2] [   82.2    99.5]
+13        material5 rho  5.416(70)   5.417   5.458 [   5.34    5.48] [   5.28    5.56]
+14  material5 thickness  589.2(64)  589.62  588.71 [  584.1   595.3] [  573.6   599.3]
+15  material4 interface   99.0(18)  99.498  99.945 [  98.49   99.91] [  94.29   99.99]
+16        material4 rho  5.021(72)   5.026   5.027 [   4.95    5.09] [   4.87    5.15]
+17  material4 thickness  418.4(73)  417.94  417.90 [  412.5   424.7] [  403.8   435.4]
+18  material3 interface   11.6(15)  11.288  12.583 [  10.30   12.87] [  10.04   15.75]
+19        material3 rho  5.529(43)   5.528   5.536 [   5.48    5.57] [   5.45    5.62]
+20  material3 thickness  421.9(68)  422.51  423.04 [  416.5   427.6] [  405.0   434.4]
+21  material2 interface   15.1(21)  14.735  14.305 [  13.51   17.07] [  11.24   20.02]
+22        material2 rho  5.220(35)   5.220   5.215 [   5.19    5.25] [   5.15    5.29]
+23  material2 thickness  109.3(23) 109.259 109.299 [ 107.37  111.42] [ 104.84  114.05]
+24  material1 interface    8.3(15)   8.571   9.018 [   7.10    9.51] [   4.08   10.95]
+25        material1 rho  4.557(44)   4.548   4.567 [   4.51    4.60] [   4.50    4.67]
+26  material1 thickness   40.5(17)  40.489  40.499 [  38.99   41.94] [  36.41   43.84]
+27       void interface   1.71(61)   1.560   1.418 [   1.14    2.26] [   1.02    3.42]
+28             void rho  6.108(91)   6.110   6.132 [   6.02    6.19] [   5.88    6.28]
+29       void thickness  18.83(95)  18.697  18.593 [  18.01   19.57] [  17.28   21.56]
+30         Pd interface   2.46(39)   2.370   2.280 [   2.07    2.90] [   2.01    3.36]
+31               Pd rho  4.086(14)  4.0906  4.0952 [  4.074   4.098] [  4.050   4.100]
+32         Pd thickness 109.83(18) 109.884 109.963 [ 109.68  109.98] [ 109.34  110.00]
+33       SiO2 interface   5.73(28)   5.822   5.837 [   5.49    5.97] [   5.01    6.00]
+34             SiO2 rho  3.010(11)  3.0052  3.0069 [  3.001   3.019] [  3.000   3.038]
+35       SiO2 thickness  25.12(13)  25.079  25.044 [  25.02   25.22] [  25.00   25.47]
+36      SiWAFER705V rho  2.181(21)  2.1902  2.2000 [  2.158   2.198] [  2.127   2.200]

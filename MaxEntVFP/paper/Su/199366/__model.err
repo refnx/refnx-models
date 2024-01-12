@@ -1,0 +1,55 @@
+.probe
+  .back_absorption = 1
+  .background = 8.33767e-08 in [0,6e-07]
+  .intensity = 0.952696 in [0.9,1.1]
+  .sample_broadening = sample_broadening = 0
+  .theta_offset = theta_offset = 0
+.sample
+  .layers
+    [0]
+      .interface = SiWAFER7 interface = 7.56366 in [0,10]
+      .material
+        .irho = SiWAFER7 irho = 0
+        .rho = SiWAFER7 rho = 1.99063 in [1.7,2.3]
+      .thickness = SiWAFER7 thickness = 0
+    [1]
+      .interface = SiO2 interface = 1.66499 in [1,10]
+      .material
+        .irho = SiO2 irho = 0
+        .rho = SiO2 rho = 3.1996 in [2,4.5]
+      .thickness = SiO2 thickness = 27.9942 in [1,50]
+    [2]
+      .interface = Pd interface = 6.11767 in [1,10]
+      .material
+        .irho = Pd irho = 0
+        .rho = Pd rho = 3.88119 in [3.6,4.2]
+      .thickness = Pd thickness = 104.716 in [50,200]
+    [3]
+      .interface = polymerNIPAMFC interface = 2.00868 in [0.1,10]
+      .material
+        .irho = polymerNIPAMFC irho = 0
+        .rho = polymerNIPAMFC rho = 0.85115 in [0,4]
+      .thickness = polymerNIPAMFC thickness = 580.696 in [300,800]
+    [4]
+      .interface = air interface = 0
+      .material
+        .irho = air irho = 0
+        .rho = air rho = 0
+      .thickness = air thickness = 0
+  .thickness = stack thickness = 713.407
+
+[chisq=1.130(82), nllf=102.874]
+              Parameter       mean  median    best [   68% interval] [   95% interval]
+ 1           background  94(15)e-9 0.0000000935 0.0000000834 [0.000000080 0.000000110] [0.000000064 0.000000124]
+ 2            intensity  0.956(15)  0.9552  0.9527 [  0.941   0.972] [  0.927   0.985]
+ 3   SiWAFER7 interface    6.9(10)   6.846   7.564 [   5.87    7.93] [   4.97    8.92]
+ 4         SiWAFER7 rho 1.9910(99)  1.9915  1.9906 [  1.982   2.000] [  1.969   2.010]
+ 5       SiO2 interface    2.6(12)   2.318   1.665 [   1.41    3.68] [   1.07    5.39]
+ 6             SiO2 rho  3.162(54)   3.163   3.200 [   3.11    3.21] [   3.06    3.26]
+ 7       SiO2 thickness  28.09(46)  28.078  27.994 [  27.63   28.57] [  27.25   28.96]
+ 8         Pd interface   6.12(19)   6.138   6.118 [   5.94    6.31] [   5.71    6.48]
+ 9               Pd rho  3.884(27)   3.885   3.881 [   3.86    3.91] [   3.83    3.94]
+10         Pd thickness 105.07(79) 105.051 104.716 [ 104.33  105.76] [ 103.68  106.86]
+11 polymerNIPAMFC interface    2.4(14)   2.179   2.009 [   0.81    3.86] [   0.24    5.48]
+12   polymerNIPAMFC rho  0.854(21)  0.8551  0.8512 [  0.835   0.874] [  0.811   0.896]
+13 polymerNIPAMFC thickness 580.78(46) 580.747 580.696 [ 580.35  581.25] [ 579.86  581.72]

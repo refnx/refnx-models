@@ -1,0 +1,208 @@
+# steps: 1000, # draws: 130000
+step 1 cost 4.616(82)
+                              background |......... 5.53923e-13 in (0,6e-07)
+                               intensity .....|....          1 in (0.9,1.1)
+                      SiWAFER7 interface ....|.....    4.97301 in (0,10)
+                            SiWAFER7 rho ......|...      2.074 in (1.7,2.3)
+                          SiO2 interface ..|.......      3.596 in (1,10)
+                                SiO2 rho ....|.....      3.185 in (2,4.5)
+                          SiO2 thickness .....|....      28.46 in (1,50)
+                            Pd interface ......|...      6.746 in (1,10)
+                                  Pd rho ......|...       4.02 in (3.6,4.2)
+                            Pd thickness ...|......      106.6 in (50,200)
+                polymerNIPAMFC interface ...|......      3.845 in (0.1,10)
+                      polymerNIPAMFC rho ..|.......   0.923502 in (0,4)
+                polymerNIPAMFC thickness .....|....      585.4 in (300,800)
+step 16 cost 2.301(82)
+step 33 cost 1.932(82)
+step 51 cost 1.524(82)
+step 69 cost 1.492(82)
+step 87 cost 1.443(82)
+step 106 cost 1.438(82)
+step 125 cost 1.409(82)
+step 143 cost 1.394(82)
+step 160 cost 1.355(82)
+step 177 cost 1.318(82)
+step 195 cost 1.271(82)
+step 213 cost 1.271(82)
+step 232 cost 1.266(82)
+step 250 cost 1.250(82)
+step 268 cost 1.250(82)
+step 286 cost 1.234(82)
+step 305 cost 1.208(82)
+step 323 cost 1.178(82)
+step 341 cost 1.178(82)
+step 359 cost 1.178(82)
+step 377 cost 1.162(82)
+step 395 cost 1.162(82)
+step 413 cost 1.162(82)
+step 431 cost 1.162(82)
+step 449 cost 1.162(82)
+step 467 cost 1.162(82)
+step 485 cost 1.162(82)
+step 503 cost 1.162(82)
+step 520 cost 1.162(82)
+                              background .|........ 9.52131e-08 in (0,6e-07)
+                               intensity ...|......   0.975848 in (0.9,1.1)
+                      SiWAFER7 interface ......|...    6.13487 in (0,10)
+                            SiWAFER7 rho ....|.....    1.97268 in (1.7,2.3)
+                          SiO2 interface .|........     2.5697 in (1,10)
+                                SiO2 rho ....|.....    3.11168 in (2,4.5)
+                          SiO2 thickness .....|....    28.0488 in (1,50)
+                            Pd interface .....|....    6.34212 in (1,10)
+                                  Pd rho ....|.....    3.84742 in (3.6,4.2)
+                            Pd thickness ...|......    105.442 in (50,200)
+                polymerNIPAMFC interface ..|.......    2.84045 in (0.1,10)
+                      polymerNIPAMFC rho ..|.......   0.840514 in (0,4)
+                polymerNIPAMFC thickness .....|....     581.02 in (300,800)
+step 538 cost 1.162(82)
+step 556 cost 1.162(82)
+step 574 cost 1.162(82)
+step 592 cost 1.162(82)
+step 610 cost 1.162(82)
+step 628 cost 1.149(82)
+step 646 cost 1.149(82)
+step 664 cost 1.149(82)
+step 682 cost 1.149(82)
+step 699 cost 1.149(82)
+step 717 cost 1.149(82)
+step 735 cost 1.149(82)
+step 753 cost 1.149(82)
+step 771 cost 1.149(82)
+step 789 cost 1.149(82)
+step 807 cost 1.149(82)
+step 825 cost 1.149(82)
+step 843 cost 1.149(82)
+step 860 cost 1.149(82)
+step 877 cost 1.149(82)
+step 895 cost 1.148(82)
+step 913 cost 1.148(82)
+step 931 cost 1.138(82)
+step 949 cost 1.138(82)
+step 966 cost 1.138(82)
+step 983 cost 1.138(82)
+step 1000 cost 1.138(82)
+step 1017 cost 1.138(82)
+step 1034 cost 1.138(82)
+                              background .|........ 9.33435e-08 in (0,6e-07)
+                               intensity ..|.......   0.946865 in (0.9,1.1)
+                      SiWAFER7 interface .......|..    7.09919 in (0,10)
+                            SiWAFER7 rho ....|.....    1.99346 in (1.7,2.3)
+                          SiO2 interface .|........    2.17962 in (1,10)
+                                SiO2 rho ....|.....    3.18405 in (2,4.5)
+                          SiO2 thickness .....|....    27.9365 in (1,50)
+                            Pd interface .....|....    6.18239 in (1,10)
+                                  Pd rho .....|....    3.90357 in (3.6,4.2)
+                            Pd thickness ...|......    105.053 in (50,200)
+                polymerNIPAMFC interface .|........    1.35367 in (0.1,10)
+                      polymerNIPAMFC rho ..|.......   0.851129 in (0,4)
+                polymerNIPAMFC thickness .....|....    581.284 in (300,800)
+step 1051 cost 1.138(82)
+step 1068 cost 1.138(82)
+step 1085 cost 1.134(82)
+step 1103 cost 1.134(82)
+step 1121 cost 1.134(82)
+step 1139 cost 1.134(82)
+step 1157 cost 1.134(82)
+step 1175 cost 1.134(82)
+step 1192 cost 1.134(82)
+step 1209 cost 1.134(82)
+step 1227 cost 1.134(82)
+step 1244 cost 1.134(82)
+step 1261 cost 1.134(82)
+step 1277 cost 1.134(82)
+step 1294 cost 1.134(82)
+step 1312 cost 1.134(82)
+step 1329 cost 1.134(82)
+step 1346 cost 1.134(82)
+step 1363 cost 1.134(82)
+step 1380 cost 1.134(82)
+step 1398 cost 1.134(82)
+step 1416 cost 1.134(82)
+step 1433 cost 1.134(82)
+step 1450 cost 1.134(82)
+step 1467 cost 1.134(82)
+step 1484 cost 1.134(82)
+step 1501 cost 1.134(82)
+step 1518 cost 1.134(82)
+step 1535 cost 1.134(82)
+                              background .|........ 7.54519e-08 in (0,6e-07)
+                               intensity ...|......    0.96397 in (0.9,1.1)
+                      SiWAFER7 interface ......|...    6.36758 in (0,10)
+                            SiWAFER7 rho ....|.....    1.98949 in (1.7,2.3)
+                          SiO2 interface |.........     1.3317 in (1,10)
+                                SiO2 rho ....|.....    3.14056 in (2,4.5)
+                          SiO2 thickness .....|....    28.0699 in (1,50)
+                            Pd interface .....|....    6.25454 in (1,10)
+                                  Pd rho ....|.....     3.8679 in (3.6,4.2)
+                            Pd thickness ...|......     105.11 in (50,200)
+                polymerNIPAMFC interface .|........    1.54953 in (0.1,10)
+                      polymerNIPAMFC rho ..|.......   0.845349 in (0,4)
+                polymerNIPAMFC thickness .....|....    580.484 in (300,800)
+step 1552 cost 1.130(82)
+step 1569 cost 1.130(82)
+step 1586 cost 1.130(82)
+step 1604 cost 1.130(82)
+step 1622 cost 1.130(82)
+step 1640 cost 1.130(82)
+step 1658 cost 1.130(82)
+step 1677 cost 1.130(82)
+step 1695 cost 1.130(82)
+step 1713 cost 1.130(82)
+step 1731 cost 1.130(82)
+step 1749 cost 1.130(82)
+step 1767 cost 1.130(82)
+step 1785 cost 1.130(82)
+step 1803 cost 1.130(82)
+step 1821 cost 1.130(82)
+step 1839 cost 1.130(82)
+step 1857 cost 1.130(82)
+step 1874 cost 1.130(82)
+step 1891 cost 1.130(82)
+step 1909 cost 1.130(82)
+step 1928 cost 1.130(82)
+step 1946 cost 1.130(82)
+step 1964 cost 1.130(82)
+step 1982 cost 1.130(82)
+step 2000 cost 1.130(82)
+.probe
+  .back_absorption = 1
+  .background = 8.33767e-08 in [0,6e-07]
+  .intensity = 0.952696 in [0.9,1.1]
+  .sample_broadening = sample_broadening = 0
+  .theta_offset = theta_offset = 0
+.sample
+  .layers
+    [0]
+      .interface = SiWAFER7 interface = 7.56366 in [0,10]
+      .material
+        .irho = SiWAFER7 irho = 0
+        .rho = SiWAFER7 rho = 1.99063 in [1.7,2.3]
+      .thickness = SiWAFER7 thickness = 0
+    [1]
+      .interface = SiO2 interface = 1.66499 in [1,10]
+      .material
+        .irho = SiO2 irho = 0
+        .rho = SiO2 rho = 3.1996 in [2,4.5]
+      .thickness = SiO2 thickness = 27.9942 in [1,50]
+    [2]
+      .interface = Pd interface = 6.11767 in [1,10]
+      .material
+        .irho = Pd irho = 0
+        .rho = Pd rho = 3.88119 in [3.6,4.2]
+      .thickness = Pd thickness = 104.716 in [50,200]
+    [3]
+      .interface = polymerNIPAMFC interface = 2.00868 in [0.1,10]
+      .material
+        .irho = polymerNIPAMFC irho = 0
+        .rho = polymerNIPAMFC rho = 0.85115 in [0,4]
+      .thickness = polymerNIPAMFC thickness = 580.696 in [300,800]
+    [4]
+      .interface = air interface = 0
+      .material
+        .irho = air irho = 0
+        .rho = air rho = 0
+      .thickness = air thickness = 0
+  .thickness = stack thickness = 713.407
+
+[chisq=1.130(82), nllf=102.874]
