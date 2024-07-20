@@ -1,15 +1,15 @@
 """
 An experimental simulator for a TOF neutron reflectometer
 """
+
 __author__ = "Andrew Nelson"
 __copyright__ = "Copyright 2019, Andrew Nelson"
 __license__ = "3 clause BSD"
 
 import numpy as np
-from scipy.integrate import simps
+from scipy.integrate import simpson
 from scipy.interpolate import InterpolatedUnivariateSpline as IUS
-from scipy.stats import rv_continuous, trapz, norm, uniform
-from scipy.optimize import brentq
+from scipy.stats import rv_continuous, trapezoid, norm, uniform
 from scipy._lib._util import check_random_state
 
 from refnx.reduce import PlatypusNexus as PN
@@ -37,7 +37,7 @@ class SpectrumDist(rv_continuous):
         self._x = x
 
         # normalise the distribution
-        area = simps(y, x)
+        area = simpson(y, x)
         y /= area
         self._y = y
 
@@ -65,60 +65,13 @@ class SpectrumDist(rv_continuous):
         r = np.fromiter(v, dtype=float).reshape(x.shape)
         return r
 
-    def _f(self, x, qq):
-        return self._cdf(x) - qq
-
-    def _g(self, qq, *args):
-        return brentq(self._f, self._a, self._b, args=(qq,) + args)
-
     def _ppf(self, q, *args):
         qflat = q.ravel()
-        """
-        _a, _b = self._get_support(*args)
-
-        def f(x, qq):
-            return self._cdf(x) - qq
-
-        def g(qq):
-            return brentq(f, _a, _b, args=(qq,) + args, xtol=1e-3)
-
-        v = map(g, qflat)
-
-        cdf = _CDF(self.spl, self.fudge_factor, _a, _b)
-        g = _G(cdf)
-
-        with Pool() as p:
-            v = p.map(g, qflat)
-            r = np.fromiter(v, dtype=float).reshape(q.shape)
-        """
         # approximate the ppf using a sampled+interpolated CDF
         # the commented out methods are more accurate, but are at least
         # 3 orders of magnitude slower.
         r = np.interp(qflat, self._interpolated_cdf, self._x_interpolated_cdf)
         return r.reshape(q.shape)
-
-
-# for parallelisation (can't pickle rv_continuous all that easily)
-class _CDF(object):
-    def __init__(self, spl, fudge_factor, a, b):
-        self.a = a
-        self.b = b
-        self.spl = spl
-        self.fudge_factor = fudge_factor
-
-    def __call__(self, x):
-        return self.spl.integral(self.a, x) / self.fudge_factor
-
-
-class _G(object):
-    def __init__(self, cdf):
-        self.cdf = cdf
-
-    def _f(self, x, qq):
-        return self.cdf(x) - qq
-
-    def __call__(self, q):
-        return brentq(self._f, self.cdf.a, self.cdf.b, args=(q,), xtol=1e-4)
 
 
 class ReflectSimulator(object):
@@ -157,7 +110,7 @@ class ReflectSimulator(object):
     dlambda: float
         Wavelength resolution expressed as a percentage. dlambda=3.3
         corresponds to using disk choppers 1+3 on *PLATYPUS*.
-        (FWHM of the Gaussian approximation of a trapezoid)
+        (FWHM of the Gaussian approximation of a rectangular distribution)
 
     rebin: float
         Rebinning expressed as a percentage. The width of a wavelength bin is
@@ -210,9 +163,10 @@ class ReflectSimulator(object):
         # distribution. The full width of the uniform distribution is
         # dlambda/0.68.
         self.dlambda = dlambda / 100.0
-        # the rebin percentage refers to the full width of the bins. You have to
+        # The rebin percentage refers to the full width of the bins. You have to
         # multiply this value by 0.68 to get the equivalent contribution to the
         # resolution function.
+        # Rebinning is implicitly applied another wavelength smearing.
         self.rebin = rebin / 100.0
         self.wavelength_bins = calculate_wavelength_bins(
             lo_wavelength, hi_wavelength, rebin
@@ -296,7 +250,7 @@ class ReflectSimulator(object):
         if force_gaussian:
             self.angular_dist = norm(scale=div / 2.3548)
         else:
-            self.angular_dist = trapz(
+            self.angular_dist = trapezoid(
                 c=(alpha - beta) / 2.0 / alpha,
                 d=(alpha + beta) / 2.0 / alpha,
                 loc=-alpha,
@@ -349,13 +303,17 @@ class ReflectSimulator(object):
             )
             angles -= elevations
 
-        # calculate Q
+        # calculate Q. Each angle and wavelength corresponds to precisely known
+        # neutron properties. These precisely known properties are used to
+        # calculate reflectivities. The neutrons are then shifted to different
+        # q values by subsequent jittering of wavelengths.
         q = general.q(angles, wavelengths)
 
         # calculate reflectivities for a neutron of a given Q.
         # the angular resolution smearing has already been done. The wavelength
         # resolution smearing follows.
         if not self.only_resolution:
+            # calculate reflectivity from precisely known angles and wavelengths.
             r = self.model(q, x_err=0.0)
 
             # accept or reject neutrons based on the reflectivity of
@@ -363,7 +321,7 @@ class ReflectSimulator(object):
             criterion = rng.uniform(size=samples)
             accepted = criterion < r
         else:
-            accepted = np.ones_like(q, dtype=bool)            
+            accepted = np.ones_like(q, dtype=bool)
 
         # implement wavelength smearing from choppers. Jitter the wavelengths
         # by a uniform distribution whose full width is dlambda / 0.68.
@@ -378,8 +336,10 @@ class ReflectSimulator(object):
                 1 + self.dlambda / 0.68 * noise
             )
 
-        # update reflected beam counts. Rebin smearing
-        # is taken into account due to the finite size of the wavelength
+        # update reflected beam counts.
+        # Rebin smearing is taken into account due to the finite size of the
+        # wavelength bins.
+        # The wavelength jittering above has moved neutrons into new wavelength
         # bins.
         if not self.only_resolution:
             hist = np.histogram(
@@ -396,6 +356,18 @@ class ReflectSimulator(object):
         ):
             return
 
+        # q contains precisely known q values.
+        # jittered_wavelengths contains altered wavelengths corresponding
+        # to each of those precisely known q values.
+        # wavelength_bins contains bin edges that will eventually be used
+        # to calculate the output q values.
+        # The initial digitisation step figures out which output wavelength
+        # bin each of the jittered wavelengths belongs in. We use that
+        # digitisation to figure out how to distribute the precisely known
+        # q values into a given output wavelength bin. These values can
+        # then be histogrammed to figure out the distribution of q values
+        # corresponding to an output wavelength/q bin (i.e. the true
+        # resolution kernel).
         bin_loc = np.digitize(jittered_wavelengths, self.wavelength_bins)
         for i in range(1, len(self.wavelength_bins)):
             # extract q values that fall in each wavelength bin
@@ -454,7 +426,7 @@ class ReflectSimulator(object):
         # this will come as shortest wavelength first, or highest Q. This
         # is because the wavelength bins are monotonic increasing.
         for v in self._res_kernel.values():
-            histos.append(np.histogram(v, density=True, bins='auto'))
+            histos.append(np.histogram(v, density=True, bins="auto"))
 
         # make lowest Q comes first.
         histos.reverse()
@@ -494,7 +466,7 @@ class ReflectSimulator(object):
         bmon_direct_err = np.sqrt(self.bmon_direct)
 
         dx = np.sqrt(
-            (self.dlambda) ** 2 + self.dtheta ** 2 + (0.68 * self.rebin) ** 2
+            (self.dlambda) ** 2 + self.dtheta**2 + (0.68 * self.rebin) ** 2
         )
         dx *= self.q
 
