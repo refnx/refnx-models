@@ -9,6 +9,7 @@ __license__ = "3 clause BSD"
 import numpy as np
 from scipy.integrate import simpson
 from scipy.interpolate import InterpolatedUnivariateSpline as IUS
+from scipy.interpolate import CubicSpline
 from scipy.stats import rv_continuous, trapezoid, norm, uniform
 from scipy._lib._util import check_random_state
 
@@ -37,11 +38,12 @@ class SpectrumDist(rv_continuous):
         self._x = x
 
         # normalise the distribution
-        area = simpson(y, x)
+        area = simpson(y, x=x)
         y /= area
         self._y = y
 
         # an InterpolatedUnivariate spline models the spectrum
+        # self.spl = CubicSpline(x, y)
         self.spl = IUS(x, y)
 
         # fudge_factor required because integral of the spline is not exactly 1
