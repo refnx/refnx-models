@@ -212,7 +212,7 @@ class ReflectSimulator(object):
             a = PN(direct_spectrum)
             q, i, di = a.process(
                 normalise=False,
-                normalise_bins=False,
+                normalise_bins=True,
                 rebin_percent=0.5,
                 lo_wavelength=max(0, lo_wavelength - 1),
                 hi_wavelength=hi_wavelength + 1,
