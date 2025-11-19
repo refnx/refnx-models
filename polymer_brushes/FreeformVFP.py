@@ -1,7 +1,7 @@
 import numpy as np
 
 from scipy.interpolate import PchipInterpolator as Pchip
-from scipy.integrate import simps
+from scipy.integrate import simpson
 
 from refnx.reflect import Structure, Component, SLD, Slab
 from refnx.analysis import Parameters, Parameter, possibly_create_parameter
@@ -251,7 +251,7 @@ class FreeformVFP(Component):
         """
         zed, profile = self.profile()
         profile *= zed**moment
-        val = simps(profile, zed)
+        val = simpson(profile, zed)
         area = self.profile_area()
         return val / area
 
