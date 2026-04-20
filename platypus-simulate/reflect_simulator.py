@@ -6,6 +6,8 @@ __author__ = "Andrew Nelson"
 __copyright__ = "Copyright 2019, Andrew Nelson"
 __license__ = "3 clause BSD"
 
+import warnings
+
 import numpy as np
 from scipy.integrate import simpson
 from scipy.interpolate import InterpolatedUnivariateSpline as IUS
@@ -13,7 +15,7 @@ from scipy.interpolate import CubicSpline
 from scipy.stats import rv_continuous, trapezoid, norm, uniform
 from scipy._lib._util import check_random_state
 
-from refnx.reduce import PlatypusNexus as PN
+from refnx.reduce import create_reflect_nexus as crn
 from refnx.reduce.platypusnexus import calculate_wavelength_bins
 from refnx.reduce import parabolic_motion as pm
 from refnx.util import general, ErrorProp
@@ -76,7 +78,7 @@ class SpectrumDist(rv_continuous):
         return r.reshape(q.shape)
 
 
-class ReflectSimulator(object):
+class ReflectSimulator:
     """
     Simulate a reflectivity pattern from PLATYPUS.
 
@@ -133,9 +135,20 @@ class ReflectSimulator(object):
         time-of-flight reflectometer generate wavelengths from a uniform
         distribution.
 
+    only_resolution: bool
+        If you only want to calculate the resolution function of the
+        instrument.
+
     Notes
     -----
     Angular, chopper and rebin smearing effects are all taken into account.
+
+    The collimation slit openings are chosen to have the optimal settings
+    for the selected footprint and angular resolution.
+    The `recommended_samples` method is only accurate if the configuration
+    used to acquire the `direct_spectrum` is commensurate with the
+    `L12`, `L2S`, `footprint`, `dtheta`, `dlambda` settings that are used to
+    construct this instance.
     """
 
     def __init__(
@@ -208,9 +221,10 @@ class ReflectSimulator(object):
             self.spectrum_dist = uniform(
                 loc=lo_wavelength - 1, scale=hi_wavelength - lo_wavelength + 1
             )
+            self.pn = None
         else:
-            a = PN(direct_spectrum)
-            q, i, di = a.process(
+            self.pn = crn(direct_spectrum)
+            q, i, di = self.pn.process(
                 normalise=False,
                 normalise_bins=True,
                 rebin_percent=0.5,
@@ -230,7 +244,9 @@ class ReflectSimulator(object):
         # approximation to a trapezoid.
 
         # stores the q vectors contributing towards each datapoint
-        self._res_kernel = {}
+        self._res_kernel = {
+            i: np.array([]) for i in range(len(self.wavelength_bins) - 1)
+        }
         self._min_samples = 0
 
         self.dtheta = dtheta / 100.0
@@ -259,22 +275,75 @@ class ReflectSimulator(object):
                 scale=2 * alpha,
             )
 
+    def recommended_samples(self, run_time, scale=1):
+        """
+        Gives the recommended number of samples needed to run the reflectivity
+        monte-carlo simulation.
+
+        The direct beam intensity (cts/sec) is calculable from the direct beam
+        spectrum that may have been used to construct the instance. If a
+        real-world sample `run_time` is known, then the integrated direct beam
+        counts, `num_samples`, is also calculable. This is the number that should
+        be passed to the `ReflectSimulator.sample` method.
+
+        Parameters
+        ----------
+        run_time: float
+            Measurement time for the reflected beam (seconds).
+        scale: float
+            Applied multiplying factor.
+
+        Returns
+        -------
+        num_samples: int
+            Recommended number of samples.
+
+        Notes
+        -----
+        The direct beam file has an intensity `total_counts / total_time`. If
+        an attenuator was used to measure that file, with an attenuation factor
+        of `scale = 30`, then the overall intensity is
+        `scale * total_counts / total_time`. If a reflection run is done on
+        that surface for `run_time` seconds then the total number of neutrons
+        incident on the surface is
+        `run_time * scale * total_counts / total_time`.
+        This is the value calculated by this method that should be provided to
+        `ReflectSimulator.sample`.
+        Further modifications to `scale` are required if the direct beam run
+        file is used to approximate the spectrum for a different angle of
+        incidence.
+        For example, if the direct beam corresponds to an incidence angle of
+        0.65 degrees, and you want to use the same spectrum to simulate an
+        angle of incidence of 3.0 degrees, then the `scale` factor needs to be
+        increased by a factor of `(3.0 / 0.65)**2 = 21.3`, to take into account
+        the commensurate opening of the slits. i.e, the overall `scale` factor
+        will be `30 * 21.3 = 639`.
+        """
+        if self.pn is None:
+            raise RuntimeError("No direct beam file provided.")
+        if self.only_resolution:
+            warnings.warn(
+                "No specific run time required for calculating resolution. "
+                "An arbitary number of samples is provided",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            return 10_000_000
+
+        cat = self.pn.cat.cat
+        direct_beam_intensity = scale * cat["total_counts"] / cat["time"]
+        return int(direct_beam_intensity.item() * run_time)
+
     def sample(self, samples, random_state=None):
         """
-        Sample the beam for reflected signal.
-
-        2400000 samples roughly corresponds to 1200 sec of *PLATYPUS* using
-        dlambda=3.3 and dtheta=3.3 at angle=0.65.
-        150000000 samples roughly corresponds to 3600 sec of *PLATYPUS* using
-        dlambda=3.3 and dtheta=3.3 at angle=3.0.
-
-        (The sample number <--> actual acquisition time correspondence has
-         not been checked fully)
+        Monte Carlo sample the beam for reflected signal.
 
         Parameters
         ----------
         samples: int
-            How many samples to run.
+            How many samples to run. This corresponds to the number of neutrons
+            incident on the sample. This can be estimated by the
+            `ReflectSimulator.sample` method.
         random_state: {int, `~np.random.RandomState`, `~np.random.Generator`}, optional
             If `random_state` is not specified the
             `~np.random.RandomState` singleton is used.
@@ -350,12 +419,11 @@ class ReflectSimulator(object):
             self.reflected_beam += hist[0]
             self.bmon_reflect += float(samples)
 
-        # update resolution kernel. If we have more than 100000 in all
-        # bins skip
-        if (
-            len(self._res_kernel)
-            and np.min([len(v) for v in self._res_kernel.values()]) > 100000
-        ):
+        # update resolution kernel.
+        # If we have more than 100000 in all bins skip
+        RES_NEEDED = 100_000
+        sz = np.array([len(v) for v in self._res_kernel.values()])
+        if np.min(sz) > RES_NEEDED:
             return
 
         # q contains precisely known q values.
@@ -371,14 +439,21 @@ class ReflectSimulator(object):
         # corresponding to an output wavelength/q bin (i.e. the true
         # resolution kernel).
         bin_loc = np.digitize(jittered_wavelengths, self.wavelength_bins)
-        for i in range(1, len(self.wavelength_bins)):
+
+        # only accumulate the _res_kernel that need additional data
+        update_loc = np.squeeze(np.argwhere(sz < RES_NEEDED))
+        if np.size(update_loc) == 0:
+            return
+
+        for i in np.atleast_1d(update_loc):
             # extract q values that fall in each wavelength bin
-            q_for_bin = np.copy(q[bin_loc == i])
-            q_samples_so_far = self._res_kernel.get(i - 1, np.array([]))
+            q_for_bin = np.extract(bin_loc == i + 1, q)
+            # q_for_bin = np.copy(q[bin_loc == i])
+            q_samples_so_far = self._res_kernel.get(i, np.array([]))
             updated_samples = np.concatenate((q_samples_so_far, q_for_bin))
 
             # no need to keep double precision for these sample arrays
-            self._res_kernel[i - 1] = updated_samples.astype(np.float32)
+            self._res_kernel[i] = updated_samples.astype(np.float32)
 
     def sample_direct(self, samples, random_state=None):
         """
@@ -421,14 +496,13 @@ class ReflectSimulator(object):
         self.direct_beam += hist[0]
         self.bmon_direct += float(samples)
 
-    @property
-    def resolution_kernel(self):
+    def resolution_kernel(self, nbins=51):
         histos = []
         # first histogram all the q values corresponding to a specific bin
         # this will come as shortest wavelength first, or highest Q. This
         # is because the wavelength bins are monotonic increasing.
         for v in self._res_kernel.values():
-            histos.append(np.histogram(v, density=True, bins="auto"))
+            histos.append(np.histogram(v, density=True, bins=nbins))
 
         # make lowest Q comes first.
         histos.reverse()
