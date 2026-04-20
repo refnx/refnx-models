@@ -76,7 +76,7 @@ class SpectrumDist(rv_continuous):
         return r.reshape(q.shape)
 
 
-class ReflectSimulator(object):
+class ReflectSimulator():
     """
     Simulate a reflectivity pattern from PLATYPUS.
 
@@ -133,9 +133,23 @@ class ReflectSimulator(object):
         time-of-flight reflectometer generate wavelengths from a uniform
         distribution.
 
+    only_resolution: bool
+        If you only want to calculate the resolution function of the
+        instrument.
+
+    direct_beam_intensity: number, optional
+        The direct beam intensity in counts per second.
+        By default the direct beam intensity is derived from the direct beam
+        spectrum. If the direct beam spectrum is not supplied then the
+        intensity is assumed to be 1.
+        This parameter can be used to override both those defaults.
+
     Notes
     -----
     Angular, chopper and rebin smearing effects are all taken into account.
+
+    The collimation slit openings are chosen to have the optimal settings
+    for the selected footprint and angular resolution.
     """
 
     def __init__(
@@ -155,6 +169,7 @@ class ReflectSimulator(object):
         force_gaussian=False,
         force_uniform_wavelength=False,
         only_resolution=False,
+        direct_beam_intensity=None,
     ):
         self.model = model
 
@@ -208,9 +223,10 @@ class ReflectSimulator(object):
             self.spectrum_dist = uniform(
                 loc=lo_wavelength - 1, scale=hi_wavelength - lo_wavelength + 1
             )
+            self.pn = None
         else:
-            a = PN(direct_spectrum)
-            q, i, di = a.process(
+            self.pn = PN(direct_spectrum)
+            q, i, di = self.pn.process(
                 normalise=False,
                 normalise_bins=True,
                 rebin_percent=0.5,
@@ -220,6 +236,14 @@ class ReflectSimulator(object):
             q = q.squeeze()
             i = i.squeeze()
             self.spectrum_dist = SpectrumDist(q, i)
+
+        if direct_beam_intensity is None:
+            self.direct_beam_intensity = 1
+            if self.pn is not None:
+                cat = self.pn.cat.cat
+                self.direct_beam_intensity = cat.total_counts / cat.time
+        else:
+            self.direct_beam_intensity = direct_beam_intensity
 
         self.force_gaussian = force_gaussian
         self.only_resolution = only_resolution
