@@ -1,7 +1,7 @@
 import numpy as np
 
 from scipy.interpolate import PchipInterpolator as Pchip
-from scipy.integrate import simps
+from scipy.integrate import simpson
 
 from refnx.reflect import Structure, Component, SLD, Slab
 from refnx.analysis import Parameters, Parameter, possibly_create_parameter
@@ -84,6 +84,11 @@ class FreeformVFP(Component):
             possibly_create_parameter(adsorbed_amount,
                                       name='%s - adsorbed amount' % name))
 
+        # NEW : need a non-varying parameter that can be used for binaryops
+        #       for corefining
+        self.extent = (possibly_create_parameter(0,
+                                      name='%s - extent' % name))
+
         # dzf are the spatial gaps between the spline knots
         self.dzf = Parameters(name='dzf - spline')
         for i, z in enumerate(dzf):
@@ -151,6 +156,9 @@ class FreeformVFP(Component):
 
         interpolator = self._vfp_interpolator()
         extent = difference / interpolator.integrate(0, 1)
+
+        # Update proxy-parameter
+        self.extent.value = extent
 
         return extent
 
@@ -243,7 +251,7 @@ class FreeformVFP(Component):
         """
         zed, profile = self.profile()
         profile *= zed**moment
-        val = simps(profile, zed)
+        val = simpson(profile, zed)
         area = self.profile_area()
         return val / area
 
@@ -254,7 +262,7 @@ class FreeformVFP(Component):
     def parameters(self):
         p = Parameters(name=self.name)
         p.extend([self.adsorbed_amount, self.dzf, self.vff,
-                  self.polymer_sld.parameters])
+                  self.polymer_sld.parameters, self.extent])
         p.extend([slab.parameters for slab in self.left_slabs])
         p.extend([slab.parameters for slab in self.right_slabs])
         return p
