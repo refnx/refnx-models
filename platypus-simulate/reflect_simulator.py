@@ -78,7 +78,7 @@ class SpectrumDist(rv_continuous):
         return r.reshape(q.shape)
 
 
-class ReflectSimulator():
+class ReflectSimulator:
     """
     Simulate a reflectivity pattern from PLATYPUS.
 
@@ -244,7 +244,9 @@ class ReflectSimulator():
         # approximation to a trapezoid.
 
         # stores the q vectors contributing towards each datapoint
-        self._res_kernel = {i: np.array([]) for i in range(len(self.wavelength_bins) - 1)}
+        self._res_kernel = {
+            i: np.array([]) for i in range(len(self.wavelength_bins) - 1)
+        }
         self._min_samples = 0
 
         self.dtheta = dtheta / 100.0
@@ -494,14 +496,13 @@ class ReflectSimulator():
         self.direct_beam += hist[0]
         self.bmon_direct += float(samples)
 
-    @property
-    def resolution_kernel(self):
+    def resolution_kernel(self, nbins=51):
         histos = []
         # first histogram all the q values corresponding to a specific bin
         # this will come as shortest wavelength first, or highest Q. This
         # is because the wavelength bins are monotonic increasing.
         for v in self._res_kernel.values():
-            histos.append(np.histogram(v, density=True, bins="auto"))
+            histos.append(np.histogram(v, density=True, bins=nbins))
 
         # make lowest Q comes first.
         histos.reverse()
